@@ -1,0 +1,82 @@
+---
+title: "integration 2"
+output: html_document
+date: "2023-04-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(Seurat)
+library(patchwork)
+```
+
+
+```{r GSE115469}
+GSE115469_NF <- read.csv("C:/Users/sandr/Downloads/GSE115469/GSE115469_Data.csv")
+```
+
+```{r GSE115469}
+GSE115469_NF <- CreateSeuratObject(counts=GSE115469_NF, project="PEC2")
+GSE115469_NF
+GSE115469_NF[["percent.mt"]] <- PercentageFeatureSet(GSE115469_NF, pattern = "^MT-")
+GSE115469 <- subset(GSE115469_NF, subset = nFeature_RNA > 300 & nFeature_RNA < 2500 & percent.mt < 30)
+```
+
+```{r normalizar}
+GSE115469 <- NormalizeData(GSE115469)
+GSE115469
+```
+
+```{r view data}
+View(GSE124395@meta.data)
+```
+
+```{r GSE124395}
+GSE124395_NF <- readRDS("C:/Users/sandr/Downloads/GSE124395/GSE124395_Normalhumanliverdata.RData")
+GSE124395_NF<-CreateSeuratObject(GSE124395_NF, project="PEC2", min.cells=3, min.features = 300)
+VlnPlot(GSE124395_NF, features = c("nFeature_RNA", "nCount_RNA"), ncol = 2)
+```
+
+```{r}
+GSE124395_NF[["percent.mt"]] <- PercentageFeatureSet(GSE124395_NF, pattern = "^MT-")
+GSE124395 <- subset(GSE124395_NF, subset = nFeature_RNA > 300 & nFeature_RNA < 2500 & percent.mt < 30)
+```
+
+```{r normalizar}
+GSE124395 <- NormalizeData(GSE124395)
+GSE124395
+```
+```{r}
+GSE124395_NF
+```
+
+```{r}
+GSE124395 <- FindVariableFeatures(GSE124395, selection.method = "vst", nfeatures = 2000)
+GSE115469 <- FindVariableFeatures(GSE115469, selection.method = "vst", nfeatures = 2000)
+```
+```{r integration}
+liver.list=list(GSE115469, GSE124395)
+k.filter <- min(200, min(sapply(liver.list, ncol)))
+liver.anchors <- FindIntegrationAnchors(object.list=liver.list, dims = 1:30, k.filter = k.filter)
+liver.integrated <- IntegrateData(anchorset = liver.anchors, dims = 1:30)
+```
+```{r integration2}
+liver.list=c(GSE115469,GSE124395)
+features <- SelectIntegrationFeatures(object.list = liver.list)
+immune.anchors <- FindIntegrationAnchors(object.list = liver.list, anchor.features = features)
+```
+
+
+                    
+                                  
