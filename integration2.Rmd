@@ -23,23 +23,59 @@ library(patchwork)
 
 
 ```{r GSE115469}
-GSE115469_NF <- read.csv("C:/Users/sandr/Downloads/GSE115469/GSE115469_Data.csv")
+GSE115469_NF <- read.csv("C:/Users/sandr/Downloads/GSE115469_Data.csv")
 ```
+
+```{R}
+head(GSE115469_NF)
+```
+
 
 ```{r GSE115469}
 GSE115469_NF <- CreateSeuratObject(counts=GSE115469_NF, project="PEC2")
 GSE115469_NF
+```
+```{R}
+View(GSE115469_NF@meta.data)
+```
+```{r}
+#quitar valor X y NA
+GSE115469_NF <- subset(GSE115469_NF, subset = nFeature_RNA > 1)
+View(GSE115469_NF@meta.data)
+```
+```{r}
+VlnPlot(GSE115469_NF, features = c("nFeature_RNA","nCount_RNA" ), ncol = 2)
+
+```
+
+
+```{r}
+#mirar mt
+grep("^MT-", rownames(GSE115469_NF), value=T)
 GSE115469_NF[["percent.mt"]] <- PercentageFeatureSet(GSE115469_NF, pattern = "^MT-")
+VlnPlot(GSE115469_NF, features = c("percent.mt" ), ncol = 1)
+```
+```{R}
+head(GSE115469_NF)
+```
+
+
+
+```{r}
 GSE115469 <- subset(GSE115469_NF, subset = nFeature_RNA > 300 & nFeature_RNA < 2500 & percent.mt < 30)
+GSE115469
+```
+
+```{R}
+plot1 <- FeatureScatter(GSE115469_NF, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot2 <- FeatureScatter(GSE115469_NF, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot1
+plot2
 ```
 
 ```{r normalizar}
 GSE115469 <- NormalizeData(GSE115469)
 GSE115469
-```
-
-```{r view data}
-View(GSE124395@meta.data)
 ```
 
 ```{r GSE124395}
@@ -49,9 +85,21 @@ VlnPlot(GSE124395_NF, features = c("nFeature_RNA", "nCount_RNA"), ncol = 2)
 ```
 
 ```{r}
-GSE124395_NF[["percent.mt"]] <- PercentageFeatureSet(GSE124395_NF, pattern = "^MT-")
+grep("^MT.", rownames(GSE124395_NF), value=T)
+#creo que hay genes que no son mitocondriales
+GSE124395_NF[["percent.mt"]] <- PercentageFeatureSet(GSE124395_NF, pattern = "^MT.")
+
+VlnPlot(GSE124395_NF, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+
 GSE124395 <- subset(GSE124395_NF, subset = nFeature_RNA > 300 & nFeature_RNA < 2500 & percent.mt < 30)
 ```
+```{R}
+plot1 <- FeatureScatter(GSE124395_NF, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot2 <- FeatureScatter(GSE124395_NF, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot1
+plot2
+```
+
 
 ```{r normalizar}
 GSE124395 <- NormalizeData(GSE124395)
@@ -63,8 +111,26 @@ GSE124395_NF
 
 ```{r}
 GSE124395 <- FindVariableFeatures(GSE124395, selection.method = "vst", nfeatures = 2000)
+```
+```{r}
+top10<-head(VariableFeatures(GSE124395), 10)
+plot1 <- VariableFeaturePlot(GSE124395)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+CombinePlots(plots = list(plot1, plot2))
+```
+
+
+```{r}
 GSE115469 <- FindVariableFeatures(GSE115469, selection.method = "vst", nfeatures = 2000)
 ```
+
+```{r}
+top10<-head(VariableFeatures(GSE115469), 10)
+plot1 <- VariableFeaturePlot(GSE115469)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+CombinePlots(plots = list(plot1, plot2))
+```
+
 ```{r integration}
 liver.list=list(GSE115469, GSE124395)
 k.filter <- min(200, min(sapply(liver.list, ncol)))
